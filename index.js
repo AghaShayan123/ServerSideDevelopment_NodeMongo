@@ -3,6 +3,7 @@ const assert = require('assert');
 
 const url = 'mongodb://localhost:27017/';
 const dbname = 'conFusion';
+const doper = require('./operations');
 
 MongoClient.connect(url, (err, client) => {
     assert.equal(err, null);
@@ -10,28 +11,40 @@ MongoClient.connect(url, (err, client) => {
     console.log('connected succesfully to server');
 
     const db = client.db(dbname)
-    const collection = db.collection('dishes');
 
-    collection.insertOne({
-        "name": "Test",
-        "description": "Test Desc"
-    }, (err, result) => {
-        assert.equal(err, null);
+    doper.insertDocument(db, 
+        {
+            name: 'Vadonut', 
+            description: 'Test'
+        },
+        "dishes", (result) => {
+            console.log("Insert Document:\n", result.ops);
 
-        console.log('After insert : \n')
-        console.log(result.ops)
+            doper.findDocument(db, 'dishes', (docs) =>{
+                console.log("Found Documents:\n", docs);
 
-        collection.find({}).toArray((err, docs) => {
-            assert.equal(err, null);
+                doper.updateDocument(db, 
+                    {
+                        name: "Vadonut"
+                    }, 
+                    {
+                        description: "Updated Test"
+                    },
+                    "dishes", (result) => {
+                        console.log("Updated Document:\n", result.result);
 
-            console.log('Found: \n')
-            console.log(docs)
+                        doper.findDocument(db, "dishes", (docs) => {
+                            console.log("Found Updated Documents:\n", docs);
+                            
+                            db.dropCollection("dishes", (result) => {
+                                console.log("Dropped Collection: ", result);
 
-            db.dropCollection('dishes', (err, result) => {
-                assert.equal(err, null);
-
-                client.close()
+                                client.close();
+                            });
+                        });
+                    }
+                )
             })
-        })
-    })
+        }
+    )
 })
